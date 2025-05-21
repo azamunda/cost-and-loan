@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Cost Calculator</title>
+<style>
+  :root {
+    --primary-color: #2a9d8f;
+    --secondary-color: #264653;
+    --bg-color: #e9f1f7;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --transition-speed: 0.3s;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 2rem;
+    background: var(--bg-color);
+    font-family: var(--font-family);
+    color: var(--secondary-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+  .calculator {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 24px rgba(38, 70, 83, 0.15);
+    padding: 2rem 3rem;
+    width: 360px;
+  }
+  .calculator h1 {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    font-size: 1.8rem;
+    text-align: center;
+  }
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    user-select: none;
+  }
+  input[type="number"], select {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    font-size: 1rem;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    transition: border-color var(--transition-speed);
+  }
+  input[type="number"]:focus, select:focus {
+    outline: none;
+    border-color: #e76f51;
+  }
+  .options {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .options > div {
+    flex: 1;
+  }
+  button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
+  }
+  button:hover {
+    background-color: #21867a;
+  }
+  .result {
+    margin-top: 1.75rem;
+    padding: 1rem;
+    background: #d8f3dc;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #1b4332;
+    text-align: center;
+    user-select: all;
+  }
+  .error {
+    color: #e63946;
+    font-weight: 600;
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+  <section class="calculator" aria-label="Калькулятор стоимости">
+    <h1>Калькулятор стоимости</h1>
+    <form id="costCalcForm" novalidate>
+      <div class="form-group">
+        <label for="baseCost">Базовая стоимость (₽)</label>
+        <input type="number" id="baseCost" name="baseCost" min="0" step="0.01" placeholder="Введите базовую стоимость" required aria-required="true" />
+        <div class="error" id="baseCostError" aria-live="polite"></div>
+      </div>
+
+      <div class="options">
+        <div class="form-group">
+          <label for="taxRate">Налог (%)</label>
+          <input type="number" id="taxRate" name="taxRate" min="0" max="100" step="0.01" value="20" required aria-required="true" />
+          <div class="error" id="taxRateError" aria-live="polite"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="discount">Скидка (%)</label>
+          <input type="number" id="discount" name="discount" min="0" max="100" step="0.01" value="0" required aria-required="true" />
+          <div class="error" id="discountError" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="quantity">Количество</label>
+        <input type="number" id="quantity" name="quantity" min="1" step="1" value="1" required aria-required="true" />
+        <div class="error" id="quantityError" aria-live="polite"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="currency">Валюта</label>
+        <select id="currency" name="currency" aria-label="Выберите валюту">
+          <option value="RUB" selected>₽ Российский рубль</option>
+          <option value="USD">$ Доллар США</option>
+          <option value="EUR">€ Евро</option>
+          <option value="GBP">£ Фунт стерлингов</option>
+          <option value="JPY">¥ Японская иена</option>
+        </select>
+      </div>
+
+      <button type="submit" aria-label="Рассчитать итоговую стоимость">Рассчитать</button>
+    </form>
+
+    <output id="result" role="region" aria-live="polite" class="result" style="display:none;"></output>
+  </section>
+
+<script>
+  (() => {
+    const form = document.getElementById('costCalcForm');
+    const baseCostInput = form.baseCost;
+    const taxRateInput = form.taxRate;
+    const discountInput = form.discount;
+    const quantityInput = form.quantity;
+    const currencySelect = form.currency;
+    const resultOutput = document.getElementById('result');
+
+    const errorElements = {
+      baseCost: document.getElementById('baseCostError'),
+      taxRate: document.getElementById('taxRateError'),
+      discount: document.getElementById('discountError'),
+      quantity: document.getElementById('quantityError')
+    };
+
+    // Currency symbols map
+    const currencySymbols = {
+      RUB: '₽',
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      JPY: '¥'
+    };
+
+    // Validate individual inputs and show errors
+    function validateInput(input, min, max, field) {
+      const value = input.value.trim();
+      let num = Number(value);
+
+      if (value === '' || isNaN(num)) {
+        errorElements[field].textContent = 'Это поле обязательно и должно быть числом';
+        return false;
+      }
+      if (min !== null && num < min) {
+        errorElements[field].textContent = `Значение не может быть меньше ${min}`;
+        return false;
+      }
+      if (max !== null && num > max) {
+        errorElements[field].textContent = `Значение не может быть больше ${max}`;
+        return false;
+      }
+      errorElements[field].textContent = '';
+      return true;
+    }
+
+    // Format number with thousand separators and fixed decimals
+    function formatCurrency(value, currencyCode) {
+      return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    // Calculate total cost with tax, discount, and quantity
+    function calculateTotal(baseCost, taxRate, discount, quantity) {
+      // Apply discount first
+      let discounted = baseCost * (1 - discount / 100);
+      // Apply tax on discounted price
+      let taxed = discounted * (1 + taxRate / 100);
+      // Multiply by quantity
+      return taxed * quantity;
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const validBaseCost = validateInput(baseCostInput, 0, null, 'baseCost');
+      const validTaxRate = validateInput(taxRateInput, 0, 100, 'taxRate');
+      const validDiscount = validateInput(discountInput, 0, 100, 'discount');
+      const validQuantity = validateInput(quantityInput, 1, null, 'quantity');
+
+      if (!validBaseCost || !validTaxRate || !validDiscount || !validQuantity) {
+        resultOutput.style.display = 'none';
+        return;
+      }
+
+      const baseCost = parseFloat(baseCostInput.value);
+      const taxRate = parseFloat(taxRateInput.value);
+      const discount = parseFloat(discountInput.value);
+      const quantity = parseInt(quantityInput.value, 10);
+      const currency = currencySelect.value;
+
+      const total = calculateTotal(baseCost, taxRate, discount, quantity);
+
+      resultOutput.textContent = `Итоговая стоимость: ${formatCurrency(total, currency)}`;
+      resultOutput.style.display = 'block';
+    });
+  })();
+</script>
+</body>
+</html>

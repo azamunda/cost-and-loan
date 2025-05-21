@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced Loan Calculator</title>
+<style>
+  :root {
+    --primary-color: #4a90e2;
+    --bg-color: #f5f7fa;
+    --text-color: #333;
+    --border-radius: 8px;
+    --shadow: 0 4px 12px rgba(0,0,0,0.1);
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin:0; padding:2rem;
+    background: var(--bg-color);
+    font-family: var(--font-family);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+  .loan-calculator {
+    background: #fff;
+    width: 420px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 1.5rem;
+  }
+
+  .loan-calculator h2 {
+    grid-column: 1 / -1;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    font-size: 1.6rem;
+    text-align: center;
+    color: var(--primary-color);
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    color: #555;
+  }
+
+  input[type=number], input[type=range], select {
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--border-radius);
+    border: 1.5px solid #ccc;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  input[type=number]:focus, select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 4px;
+    background: #ddd;
+    cursor: pointer;
+    margin-top: 0.4rem;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    margin-top: -7px;
+    transition: background 0.3s ease;
+  }
+  input[type=range]:hover::-webkit-slider-thumb {
+    background: #357ABD;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: background 0.3s ease;
+  }
+  input[type=range]:hover::-moz-range-thumb {
+    background: #357ABD;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .result {
+    grid-column: 1 / -1;
+    background: #e9f0fe;
+    border-radius: var(--border-radius);
+    padding: 1rem 1.5rem;
+    box-shadow: inset 0 0 8px rgba(74,144,226,0.1);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    user-select: none;
+  }
+
+  .advanced-options {
+    grid-column: 1 / -1;
+    background: #f0f4fa;
+    border-radius: var(--border-radius);
+    padding: 1rem 1.2rem;
+    font-size: 0.9rem;
+    color: #444;
+    border: 1px solid #d0d9ea;
+  }
+
+  .advanced-options label {
+    font-weight: 500;
+  }
+
+  .flex-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  button {
+    grid-column: 1 / -1;
+    padding: 0.8rem 1rem;
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background 0.3s ease;
+    user-select: none;
+  }
+  button:active {
+    background: #357ABD;
+  }
+  button:disabled {
+    background: #a9c0f9;
+    cursor: not-allowed;
+  }
+
+  .tooltip {
+    position: relative;
+    cursor: help;
+  }
+  .tooltip:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(50,50,50,0.85);
+    color: #fff;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  .tooltip::after {
+    opacity: 0;
+  }
+
+  .summary {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: #222;
+    background: #fefefe;
+    border-radius: var(--border-radius);
+    padding: 1rem 1.3rem;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.03);
+    line-height: 1.4;
+  }
+  .summary span {
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+</style>
+</head>
+<body>
+  <form class="loan-calculator" id="loanCalc" novalidate>
+    <h2>Калькулятор кредита</h2>
+
+    <label for="loanAmount" class="tooltip" data-tip="Введите сумму кредита">
+      Сумма кредита, ₽
+      <input type="number" id="loanAmount" name="loanAmount" min="10000" max="100000000" step="1000" value="1000000" required />
+    </label>
+
+    <label for="loanTerm" class="tooltip" data-tip="Срок кредита в месяцах">
+      Срок кредита, мес.
+      <input type="range" id="loanTerm" name="loanTerm" min="1" max="360" step="1" value="60" />
+    </label>
+
+    <label for="interestRate" class="tooltip" data-tip="Годовая процентная ставка">
+      Процентная ставка, %
+      <input type="number" id="interestRate" name="interestRate" min="0.01" max="100" step="0.01" value="8.5" required />
+    </label>
+
+    <label for="paymentType" class="tooltip" data-tip="Тип платежа: аннуитетный или дифференцированный">
+      Тип платежа
+      <select id="paymentType" name="paymentType">
+        <option value="annuity" selected>Аннуитетный</option>
+        <option value="differentiated">Дифференцированный</option>
+      </select>
+    </label>
+
+    <div class="advanced-options full-width">
+      <label>
+        Дополнительные параметры
+      </label>
+      <div class="flex-row">
+        <input type="checkbox" id="insurance" name="insurance" />
+        <label for="insurance" class="tooltip" data-tip="Добавить страховку к кредиту (увеличивает ставку на 0.5%)">Страховка (+0.5%)</label>
+      </div>
+      <div class="flex-row" style="margin-top:0.5rem;">
+        <input type="checkbox" id="earlyRepayment" name="earlyRepayment" />
+        <label for="earlyRepayment" class="tooltip" data-tip="Возможность досрочного погашения без штрафов">Досрочное погашение</label>
+      </div>
+    </div>
+
+    <button type="submit" id="calculateBtn">Рассчитать</button>
+
+    <div class="result full-width" aria-live="polite" aria-atomic="true" id="result" role="region" tabindex="0">
+      Введите параметры и нажмите "Рассчитать"
+    </div>
+
+    <div class="summary full-width" id="summary" aria-live="polite"></div>
+  </form>
+
+<script>
+  (function(){
+    const form = document.getElementById('loanCalc');
+    const loanAmountInput = form.loanAmount;
+    const loanTermInput = form.loanTerm;
+    const interestRateInput = form.interestRate;
+    const paymentTypeSelect = form.paymentType;
+    const insuranceCheckbox = form.insurance;
+    const earlyRepaymentCheckbox = form.earlyRepayment;
+    const resultDiv = document.getElementById('result');
+    const summaryDiv = document.getElementById('summary');
+    const calculateBtn = document.getElementById('calculateBtn');
+
+    // Format number as currency in Russian Ruble
+    function formatCurrency(num) {
+      return num.toLocaleString('ru-RU', {style:'currency', currency:'RUB', minimumFractionDigits: 0});
+    }
+
+    // Calculate annuity monthly payment
+    // P = S * (i*(1+i)^n) / ((1+i)^n-1)
+    // S - principal, i - monthly rate, n - months
+    function calcAnnuity(S, i, n) {
+      if(i === 0) return S / n;
+      return S * (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+    }
+
+    // Calculate differentiated payments array
+    // monthly payment = principal/n + (principal - repaid) * i
+    function calcDifferentiated(S, i, n) {
+      let payments = [];
+      for(let m=0; m<n; m++) {
+        let principalPart = S / n;
+        let interestPart = (S - principalPart * m) * i;
+        payments.push(principalPart + interestPart);
+      }
+      return payments;
+    }
+
+    // Validate inputs and return parsed values or errors
+    function getInputValues() {
+      const errors = [];
+
+      let S = Number(loanAmountInput.value);
+      if(isNaN(S) || S < 10000 || S > 100000000) errors.push('Сумма кредита должна быть от 10 000 до 100 000 000 ₽');
+
+      let n = Number(loanTermInput.value);
+      if(isNaN(n) || n < 1 || n > 360) errors.push('Срок кредита должен быть от 1 до 360 месяцев');
+
+      let annualRate = Number(interestRateInput.value);
+      if(isNaN(annualRate) || annualRate <= 0 || annualRate > 100) errors.push('Процентная ставка должна быть от 0.01% до 100%');
+
+      let paymentType = paymentTypeSelect.value;
+      if(paymentType !== 'annuity' && paymentType !== 'differentiated') errors.push('Неверный тип платежа');
+
+      let insurance = insuranceCheckbox.checked;
+      let earlyRepayment = earlyRepaymentCheckbox.checked;
+
+      return { errors, S, n, annualRate, paymentType, insurance, earlyRepayment };
+    }
+
+    // Main calculation and update UI
+    function calculateLoan(ev) {
+      if(ev) ev.preventDefault();
+
+      const { errors, S, n, annualRate, paymentType, insurance, earlyRepayment } = getInputValues();
+
+      if(errors.length > 0){
+        resultDiv.textContent = 'Ошибки: ' + errors.join('; ');
+        summaryDiv.textContent = '';
+        calculateBtn.disabled = true;
+        return;
+      }
+      calculateBtn.disabled = false;
+
+      // Adjust interest rate if insurance enabled (+0.5%)
+      let adjustedAnnualRate = annualRate + (insurance ? 0.5 : 0);
+      let monthlyRate = adjustedAnnualRate / 100 / 12;
+
+      let output = '';
+      let totalPayment = 0;
+      let totalInterest = 0;
+      let monthlyPayments = [];
+
+      if(paymentType === 'annuity') {
+        let P = calcAnnuity(S, monthlyRate, n);
+        totalPayment = P * n;
+        totalInterest = totalPayment - S;
+        monthlyPayments = Array(n).fill(P);
+        output = `Аннуитетный платёж: ${formatCurrency(P)} в месяц`;
+      } else if(paymentType === 'differentiated') {
+        monthlyPayments = calcDifferentiated(S, monthlyRate, n);
+        totalPayment = monthlyPayments.reduce((a,b) => a+b,0);
+        totalInterest = totalPayment - S;
+        output = `Дифференцированные платежи: от ${formatCurrency(monthlyPayments[0])} до ${formatCurrency(monthlyPayments[n-1])} в месяц`;
+      }
+
+      // Early repayment info
+      let earlyRepaymentInfo = earlyRepayment
+        ? 'Досрочное погашение возможно без штрафов.'
+        : 'Досрочное погашение может повлечь штрафы.';
+
+      // Display main result
+      resultDiv.textContent = output;
+
+      // Display summary with detailed info
+      summaryDiv.innerHTML = `
+        <p>Сумма кредита: <span>${formatCurrency(S)}</span></p>
+        <p>Срок кредита: <span>${n} мес.</span></p>
+        <p>Процентная ставка (годовая): <span>${adjustedAnnualRate.toFixed(2)}%</span></p>
+        <p>Общая сумма выплат: <span>${formatCurrency(totalPayment)}</span></p>
+        <p>Переплата по кредиту: <span>${formatCurrency(totalInterest)}</span></p>
+        <p>${earlyRepaymentInfo}</p>
+      `;
+
+      // Accessibility: focus result container to announce changes
+      resultDiv.focus();
+    }
+
+    // Link range slider with number input for loan term
+    loanTermInput.addEventListener('input', () => {
+      // Show value in title attribute for user reference
+      loanTermInput.title = loanTermInput.value + ' мес.';
+    });
+
+    // Enable/disable calculate button based on input validity
+    function validateForm() {
+      const { errors } = getInputValues();
+      calculateBtn.disabled = errors.length > 0;
+    }
+
+    // Event listeners for live validation
+    [loanAmountInput, loanTermInput, interestRateInput, paymentTypeSelect, insuranceCheckbox, earlyRepaymentCheckbox]
+      .forEach(el => el.addEventListener('input', validateForm));
+
+    // Initial validation
+    validateForm();
+
+    // Form submission handler
+    form.addEventListener('submit', calculateLoan);
+  })();
+</script>
+</body>
+</html>
